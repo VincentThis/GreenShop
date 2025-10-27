@@ -97,7 +97,7 @@ const App = () => {
       if (itemsError) throw itemsError;
 
       setCart([]);
-      window.location.href = "/checkout-success";
+      window.location.href = "/#/checkout-success";
     } catch (error) {
       console.error("Checkout error:", error);
       toast.error("Failed to complete checkout. Please try again.");
