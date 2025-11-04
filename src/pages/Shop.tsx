@@ -1,5 +1,7 @@
+
+/*
 import { Header } from "@/components/Header";
-import { ProductGrid } from "@/components/ProductGrid";
+//import { ProductGrid } from "@/components/ProductGrid";
 import { CartFunctions } from "@/contexts/CartContext";
 
 
@@ -16,4 +18,4 @@ const Shop = ({ cart }: { cart: CartFunctions }) => {
   );
 };
 
-export default Shop;
+export default Shop; */

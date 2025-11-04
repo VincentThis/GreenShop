@@ -4,12 +4,12 @@ import heroBanner from "@/assets/hero-banner.jpg";
 
 export const Hero = () => {
   return (
-    <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
+    <section className="relative h-[680px] flex items-center justify-center overflow-hidden">
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBanner})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-background/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/20 to-background/10" />
       </div>
       
       <div className="relative container text-center md:text-left max-w-2xl px-6">

@@ -20,7 +20,8 @@ const Cart = ({ cart }: { cart: CartFunctions }) => {
           <Link to="/shop">
             <Button variant="hero">Continue Shopping</Button>
           </Link>
-        </div>
+
+        r </div>
       </div>
     );
   }

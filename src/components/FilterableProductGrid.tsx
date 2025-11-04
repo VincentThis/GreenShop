@@ -19,6 +19,7 @@ const allProducts = [
   { id: 6, name: "Raven's Sofa", price: 180, image: product6, category: "Home Decor" },
   { id: 7, name: "Jewelry Box", price: 100, image: product7, category: "Storage" },
   { id: 8, name: "Mond's AAPE", price: 300, image: product8, category: "Textiles" },
+ 
 ];
 
 interface FilterableProductGridProps {
