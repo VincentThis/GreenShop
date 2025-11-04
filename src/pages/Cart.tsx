@@ -21,7 +21,7 @@ const Cart = ({ cart }: { cart: CartFunctions }) => {
             <Button variant="hero">Continue Shopping</Button>
           </Link>
 
-        r </div>
+         </div>
       </div>
     );
   }
