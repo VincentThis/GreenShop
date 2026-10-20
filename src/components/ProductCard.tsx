@@ -1,49 +1,61 @@
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { ArrowUpRight, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { CartFunctions } from "@/contexts/CartContext";
-
-interface ProductCardProps {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  category: string;
-  cart: CartFunctions;
-}
-
-export const ProductCard = ({ id, name, price, image, category, cart }: ProductCardProps) => {
-  const handleAddToCart = () => {
-    cart.addToCart({ id, name, price, image, category });
-  };
-
-  return (
-    <Card className="group overflow-hidden border-border hover:shadow-lg transition-all duration-300">
-      <Link to={`/product/${id}`}>
-        <div className="aspect-square overflow-hidden bg-secondary">
-          <img
-            src={image}
-            alt={name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-      </Link>
-      <div className="p-4 space-y-3">
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wide">{category}</p>
-          <Link to={`/product/${id}`}>
-            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-              {name}
-            </h3>
-          </Link>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-foreground">${price}</span>
-          <Button size="sm" variant="secondary" onClick={handleAddToCart}>
-            Add to Cart
-          </Button>
+import { Phone, formatPrice } from "@/data/phones";
+export const ProductCard = ({
+  cart,
+  ...phone
+}: Phone & { cart: CartFunctions }) => (
+  <article className="phone-card">
+    <Link
+      to={`/product/${phone.id}`}
+      className="phone-card-art"
+      aria-label={`View ${phone.name}`}
+    >
+      <div className="phone-card-top">
+        <span className={phone.tag ? "product-tag" : "product-brand"}>
+          {phone.tag || phone.category}
+        </span>
+        <ArrowUpRight size={18} />
+      </div>
+      <img
+        src={phone.image}
+        alt={`${phone.name} in ${phone.color}, illustration`}
+        loading="lazy"
+      />
+      <span className="phone-color-name">{phone.color}</span>
+    </Link>
+    <div className="phone-card-info">
+      <div className="product-meta">
+        <span>
+          {phone.category} / {phone.storage}
+        </span>
+        <div
+          className="color-swatches"
+          aria-label={`Illustrated finish: ${phone.color}`}
+        >
+          {phone.colors.map((color) => (
+            <span key={color} style={{ background: color }} />
+          ))}
         </div>
       </div>
-    </Card>
-  );
-};
+      <Link to={`/product/${phone.id}`}>
+        <h3>{phone.name}</h3>
+      </Link>
+      <div className="product-price-row">
+        <strong>{formatPrice(phone.price)}</strong>
+        <button
+          className="quick-add"
+          aria-label={`Add ${phone.name} to bag`}
+          onClick={() => {
+            cart.addToCart(phone);
+            toast.success(`${phone.name} added to your bag`);
+          }}
+        >
+          <Plus size={17} />
+        </button>
+      </div>
+    </div>
+  </article>
+);
