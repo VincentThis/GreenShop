@@ -1,24 +1,12 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
-
-const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold"></h1>
-        <p className="mb-4 text-xl text-gray-600"></p>
-        <a href="/" className="text-blue-500 underline hover:text-blue-700">
-          
-        </a>
-      </div>
-    </div>
-  );
-};
-
+import { Link } from "react-router-dom";
+const NotFound = () => (
+  <main className="store-shell empty-results" style={{ minHeight: "100vh" }}>
+    <span className="eyebrow">404 / CONNECTION LOST</span>
+    <h1>This page is off the grid.</h1>
+    <p>Let’s get you back to a better connection.</p>
+    <Link to="/" className="store-button dark-button">
+      Back to Phonehaus
+    </Link>
+  </main>
+);
 export default NotFound;

@@ -1,0 +1,126 @@
+name: Phonehaus CI and deployment
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phonehaus-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Install, lint, typecheck, build, and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # PRs use the offline catalogue; only main builds receive production config.
+      VITE_ENABLE_SUPABASE: ${{ github.event_name == 'push' && vars.VITE_ENABLE_SUPABASE || 'false' }}
+      VITE_SUPABASE_URL: ${{ github.event_name == 'push' && vars.VITE_SUPABASE_URL || '' }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ github.event_name == 'push' && vars.VITE_SUPABASE_PUBLISHABLE_KEY || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck application and Vite configuration
+        run: npm run typecheck
+      - name: Build production assets
+        run: npm run build
+      - name: Package Vercel Build Output API directory
+        run: npm run package:vercel
+      - name: Test production entry point, images, and package integrity
+        run: npm run test:deployment
+      - name: Save the verified deployment package
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vercel-output-${{ github.sha }}
+          path: .vercel/output
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy verified build to Vercel
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ steps.publish.outputs.url }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TELEMETRY_DISABLED: "1"
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check hosting configuration
+        shell: bash
+        run: |
+          for variable in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!variable}" ]; then
+              echo "::error::Missing GitHub Secret: $variable. See DEPLOYMENT.md."
+              exit 1
+            fi
+          done
+      - uses: actions/download-artifact@v4
+        with:
+          name: vercel-output-${{ github.sha }}
+          path: .vercel/output
+      - name: Install pinned deployment CLI
+        run: npm install --global vercel@64.7.0
+      - name: Apply migrations to the new Supabase project
+        if: vars.VITE_ENABLE_SUPABASE == 'true'
+        shell: bash
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+        run: |
+          for variable in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF; do
+            if [ -z "${!variable}" ]; then
+              echo "::error::Missing Supabase configuration: $variable. See DEPLOYMENT.md."
+              exit 1
+            fi
+          done
+          node --input-type=module -e 'if (new URL(process.env.VITE_SUPABASE_URL).hostname !== process.env.SUPABASE_PROJECT_REF + ".supabase.co") throw new Error("Supabase URL and project reference must match");'
+          npx --yes supabase@2.121.0 link --project-ref "$SUPABASE_PROJECT_REF"
+          npx --yes supabase@2.121.0 db push --linked --yes
+      - name: Deploy the tested artifact
+        id: publish
+        shell: bash
+        run: |
+          deployment_url=$(vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN")
+          if [[ ! "$deployment_url" =~ ^https://[^[:space:]]+$ ]]; then
+            echo "::error::Vercel did not return a deployment URL."
+            exit 1
+          fi
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+          echo "### Phonehaus production deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "$deployment_url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify public HTTPS entry point and assets
+        env:
+          DEPLOYMENT_URL: ${{ steps.publish.outputs.url }}
+        run: node scripts/check-live.mjs

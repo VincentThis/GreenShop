@@ -91,10 +91,10 @@ const Profile = () => {
           address: data.address || "",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Could not load your profile.",
         variant: "destructive",
       });
     } finally {
@@ -122,10 +122,10 @@ const Profile = () => {
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Could not save your profile.",
         variant: "destructive",
       });
     } finally {
